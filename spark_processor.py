@@ -16,7 +16,7 @@ def start_processing():
         StructField("heart_rate", IntegerType(), True)
     ])
 
-    # 1. Read RAW data from Kafka
+
     raw_kafka_df = spark.readStream \
         .format("kafka") \
         .option("kafka.bootstrap.servers", "localhost:9092") \
@@ -29,7 +29,7 @@ def start_processing():
         .select(from_json(col("value"), sensor_schema).alias("data")) \
         .select("data.*")
 
-    # 2. Aggregation: 10-second rolling averages
+
     aggregated_df = parsed_df \
         .withWatermark("timestamp", "10 seconds") \
         .groupBy(window(col("timestamp"), "10 seconds"), col("patient_id")) \
@@ -38,12 +38,12 @@ def start_processing():
             avg("heart_rate").alias("heart_rate")
         )
 
-    # 3. Format output for Kafka (Kafka requires a 'key' and a 'value' column as strings)
+
     kafka_output_df = aggregated_df \
         .select(
             col("patient_id").alias("key"),
             to_json(struct(
-                col("window.end").alias("timestamp"), # Use window end time as new timestamp
+                col("window.end").alias("timestamp"), 
                 col("patient_id"),
                 col("spo2").cast("integer").alias("spo2"),
                 col("heart_rate").cast("integer").alias("heart_rate")
@@ -52,7 +52,7 @@ def start_processing():
 
     print("Spark Streaming Job Started. Pushing aggregated data to 'processed_vitals' topic...")
     
-    # 4. Write PROCESSED data back to Kafka
+
     query = kafka_output_df.writeStream \
         .format("kafka") \
         .option("kafka.bootstrap.servers", "localhost:9092") \
