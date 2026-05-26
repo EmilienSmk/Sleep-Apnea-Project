@@ -23,7 +23,7 @@ def simulate_sensor(patient_id, is_apnea_event=False):
 if __name__ == "__main__":
     target_patient = "P004" 
     
-    # Connect to local Kafka container
+
     producer = KafkaProducer(
         bootstrap_servers=['localhost:9092'],
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
@@ -36,7 +36,7 @@ if __name__ == "__main__":
             apnea_event = random.random() < 0.10
             data = simulate_sensor(target_patient, apnea_event)
             
-            # Send data to Kafka topic
+
             producer.send('sensor_vitals', data)
             producer.flush()
             
