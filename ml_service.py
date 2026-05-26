@@ -20,15 +20,14 @@ def evaluate_apnea_risk(vitals, profile):
     spo2 = vitals["spo2"]
     hr = vitals["heart_rate"]
     
-    # Base thresholds adjusted dynamically by patient's static profile
-    # Higher BMI or prior high risk flags lower the tolerance threshold
+
     spo2_threshold = profile["baseline_spo2"] - 5
     if profile["bmi"] > 30:
-        spo2_threshold += 1 # Strict threshold for higher BMI patients
+        spo2_threshold += 1 
         
     hr_threshold_high = profile["baseline_hr"] + 20
 
-    # Rule-Based Statistical Anomaly Classification
+
     is_anomaly = False
     confidence = 0.0
     features_triggered = []
@@ -36,7 +35,7 @@ def evaluate_apnea_risk(vitals, profile):
     if spo2 < spo2_threshold:
         is_anomaly = True
         features_triggered.append("SpO2_Drop")
-        # Deeper drops indicate higher classification confidence
+
         confidence += min((spo2_threshold - spo2) * 15, 70.0) 
 
     if hr > hr_threshold_high:
@@ -52,7 +51,7 @@ def evaluate_apnea_risk(vitals, profile):
     }
 
 def start_ml_engine():
-    # Allow user to choose a patient to evaluate
+
     print("--- Available Patients in MongoDB (P001 to P005) ---")
     patient_id = input("Enter Patient ID to monitor (e.g., P001): ").strip().upper()
     
@@ -65,7 +64,7 @@ def start_ml_engine():
     print(f" Age: {profile['age']} | BMI: {profile['bmi']} | Baseline SpO2: {profile['baseline_spo2']}%")
     print("Listening to real-time vitals stream...")
 
-    # Consume live streaming data from Kafka
+ 
     consumer = KafkaConsumer(
         'processed_vitals',
         bootstrap_servers=['localhost:9092'],
@@ -73,7 +72,7 @@ def start_ml_engine():
         value_deserializer=lambda x: json.loads(x.decode('utf-8'))
     )
 
-    # Re-publish evaluation results to a new Kafka topic for the visualization dashboard
+
     from kafka import KafkaProducer
     producer = KafkaProducer(
         bootstrap_servers=['localhost:9092'],
@@ -83,11 +82,11 @@ def start_ml_engine():
     for message in consumer:
         vitals = message.value
         
-        # Only evaluate data belonging to our selected patient
+
         if vitals["patient_id"] == patient_id:
             assessment = evaluate_apnea_risk(vitals, profile)
             
-            # Combine raw vitals data with the ML prediction output
+
             output_payload = {
                 "timestamp": vitals["timestamp"],
                 "patient_id": patient_id,
@@ -96,11 +95,10 @@ def start_ml_engine():
                 "ml_results": assessment
             }
             
-            # Send the predictions down the pipeline to a dedicated topic
+
             producer.send('ml_predictions', output_payload)
             producer.flush()
             
-            # Print feedback to terminal
             status = assessment["status"]
             print(f"[{vitals['timestamp']}] SpO2: {vitals['spo2']}% | HR: {vitals['heart_rate']} bpm -> STATUS: {status} (Conf: {assessment['confidence_score']}%)")
 
