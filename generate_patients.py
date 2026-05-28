@@ -2,12 +2,10 @@ import random
 from pymongo import MongoClient
 
 def generate_patients(num_patients=5):
-    # Connect to local MongoDB container
     client = MongoClient("mongodb://localhost:27017/")
     db = client["sleep_apnea_db"]
     collection = db["patients"]
     
-    # Clear existing data for a fresh start
     collection.delete_many({})
 
     patients = []
@@ -22,7 +20,6 @@ def generate_patients(num_patients=5):
         }
         patients.append(patient)
     
-    # Insert into MongoDB
     collection.insert_many(patients)
     print(f"Inserted {num_patients} patient profiles into MongoDB.")
 
