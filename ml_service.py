@@ -110,8 +110,8 @@ def start_ml_streaming_engine():
             prediction = ml_model.predict(live_features)[0] 
             probabilities = ml_model.predict_proba(live_features)[0] 
             
-            is_anomaly = (prediction == 1)
-            confidence_score = round(probabilities[1] * 100, 2) if is_anomaly else round(probabilities[0] * 100, 2)
+            is_anomaly = bool(prediction == 1)
+            confidence_score = float(round(probabilities[1] * 100, 2) if is_anomaly else round(probabilities[0] * 100, 2))
             status = "APNEA_EVENT_DETECTED" if is_anomaly else "NORMAL"
             
             output_payload = {
